@@ -7,6 +7,8 @@ from enemies import *
 from Clouds import *
 vec=pygame.math.Vector2
 from os import path
+from mpu6050 import mpu6050
+import time
 
 
 class Game:
@@ -54,6 +56,8 @@ class Game:
         self.load_data()
         #pygame.mixer.music.load(path.join(self.sound_dir,'background_music.ogg'))
         self.enemies_timer=0
+        self.mpu = mpu6050(0x68)
+        self.gyro_sensitivity = 0.1
 
         for i in range(8):
             c=Cloud(self)
@@ -172,7 +176,7 @@ class Game:
         self.messageToScreen("SCORE : "+(str)(self.score), 25, white, display_width / 2 , 15)
         pygame.display.update()
         # pygame.draw.rect(gameDisplay,white,[lead_x,lead_y,block_width,block_height])
-        #self.messageToScreen("Welcome to DOODLE JUMP", red, display_width / 2 - 100, display_height - 20)
+        #self.messageToScreen("Welcome to DOODLE JUMP", red, display_width / 2 - 100, display_height - 20)  
 
 
     def run(self):
@@ -182,9 +186,10 @@ class Game:
         self.gameOver = False
         while not self.gameExit:
             self.checkEvent()
-            self.acc.x+=self.vel.x*player_Fric
-            self.vel+=self.acc
-            self.pos+=self.vel+0.5*self.acc
+            self.updateGyroMovement()  # New method to handle gyro input
+            self.acc.x += self.vel.x * player_Fric
+            self.vel += self.acc
+            self.pos += self.vel + 0.5 * self.acc
             self.checkHorizontalCrossing()
             self.updateScreen()
             self.clock.tick(fps)
@@ -194,6 +199,22 @@ class Game:
 
         pygame.quit()
         quit()
+
+    def updateGyroMovement(self):
+        try:
+            gyro_data = self.mpu.get_gyro_data()
+            # Use gyro_data['y'] for left/right tilt
+            tilt = gyro_data['y']
+            
+            # Apply tilt to acceleration
+            self.acc.x = -tilt * self.gyro_sensitivity
+            
+            # Optionally, you can use 'x' axis for jump
+            # if gyro_data['x'] > jump_threshold:
+            #     self.jump()
+        except:
+            # If there's an error reading the sensor, default to no movement
+            self.acc.x = 0
 
     def checkHorizontalCrossing(self):
         if self.pos.x > display_width:
@@ -206,19 +227,13 @@ class Game:
             self.pos.y = display_height
 
     def checkEvent(self):
-        self.acc=vec(0,gravity)
-        self.jump()
+        self.acc = vec(0, gravity)
+        self.jump()  # Keep the jump method for touch/button-based jumping
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.gameExit = True
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_LEFT:
-                    self.acc.x = -player_Acc
-
-                if event.key == pygame.K_RIGHT:
-                    self.acc.x = player_Acc
-
                 if event.key == pygame.K_SPACE:
                     self.jump()
 
@@ -243,7 +258,7 @@ class Game:
 
     def startScreen(self):
         self.gameDisplay.fill(orange)
-        self.messageToScreen("DOODLE JUMP MP PROJECT - II",40,white,display_width/2,display_height/2)
+        self.messageToScreen("PENGUIN JUMP PROJECT",40,white,display_width/2,display_height/2)
         self.messageToScreen("Press any key to continue...", 25, white, display_width / 2 + 50, display_height / 2 + 50)
         self.messageToScreen("High Score: " + str(self.highscore), 25, white, display_width / 2, 35)
         pygame.display.update()
@@ -253,7 +268,7 @@ class Game:
 
     def gameOverScreen(self):
         self.gameDisplay.fill(orange)
-        self.messageToScreen("OOPS!...GAME-OVER", 40, white, display_width / 2, 180)
+        self.messageToScreen("GAMEOVER", 40, white, display_width / 2, 180)
         self.messageToScreen("Score : "+(str)(self.score), 40, white, display_width / 2, display_height / 2-100)
         self.messageToScreen("Press any key to play again...", 30, white, display_width / 2 + 50, display_height / 2 + 50)
 
