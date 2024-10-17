@@ -4,6 +4,7 @@ red=(200,0,0)
 green=(0,200,0)
 yellow=(255,255,0)
 orange=(255,196,0)
+blue=(0, 128, 255)
 spritesheet_file_name="spritesheet_jumper.png"
 platform_colors=[(0,0,0),(200,0,0),(255,255,255),(0,200,0),(255,255,0),(255,196,0)]
 display_width=500
